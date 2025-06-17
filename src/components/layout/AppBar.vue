@@ -16,12 +16,22 @@
 
     <!-- Auth Buttons -->
     <div class="d-none d-md-flex">
-      <v-btn variant="text" to="/login" class="mr-2">
-        Iniciar sesión
-      </v-btn>
-      <v-btn color="primary" to="/register">
-        Registrarse
-      </v-btn>
+      <template v-if="!authStore.isAuthenticated">
+        <v-btn variant="text" to="/auth/login" class="mr-2">
+          Iniciar sesión
+        </v-btn>
+        <v-btn color="primary" to="/auth/register">
+          Registrarse
+        </v-btn>
+      </template>
+      <template v-else>
+        <v-btn variant="text" to="/dashboard" class="mr-2">
+          Dashboard
+        </v-btn>
+        <v-btn color="error" @click="handleLogout">
+          Cerrar sesión
+        </v-btn>
+      </template>
     </div>
 
     <!-- Mobile Menu -->
@@ -41,8 +51,16 @@
         <v-list-item to="/faq" title="FAQ"></v-list-item>
         <v-list-item to="/contact" title="Contacto"></v-list-item>
         <v-divider class="my-2"></v-divider>
-        <v-list-item to="/login" title="Iniciar sesión"></v-list-item>
-        <v-list-item to="/register" title="Registrarse"></v-list-item>
+        
+        <!-- Auth Items -->
+        <template v-if="!authStore.isAuthenticated">
+          <v-list-item to="/auth/login" title="Iniciar sesión"></v-list-item>
+          <v-list-item to="/auth/register" title="Registrarse"></v-list-item>
+        </template>
+        <template v-else>
+          <v-list-item to="/dashboard" title="Dashboard"></v-list-item>
+          <v-list-item @click="handleLogout" title="Cerrar sesión"></v-list-item>
+        </template>
       </v-list>
     </v-navigation-drawer>
   </v-app-bar>
@@ -50,8 +68,18 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
+const authStore = useAuthStore()
 const drawer = ref(false)
+
+async function handleLogout() {
+  authStore.logout()
+  drawer.value = false
+  router.push('/')
+}
 </script>
 
 <style scoped>
