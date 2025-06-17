@@ -1,0 +1,12 @@
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: translateY(-4px);
+}
+
