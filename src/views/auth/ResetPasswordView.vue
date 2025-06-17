@@ -2,40 +2,31 @@
   <v-container class="fill-height">
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="6" lg="4">
-        <v-alert
-          v-if="route.query.passwordReset"
-          type="success"
-          class="mb-4"
-        >
-          Tu contraseña ha sido actualizada correctamente. Ya puedes iniciar sesión.
-        </v-alert>
-
         <v-card class="elevation-12">
           <v-toolbar color="primary" dark flat>
-            <v-toolbar-title>Iniciar Sesión</v-toolbar-title>
+            <v-toolbar-title>Restablecer Contraseña</v-toolbar-title>
           </v-toolbar>
           
           <v-card-text>
             <v-form @submit.prevent="handleSubmit" ref="form">
               <v-text-field
-                v-model="formData.email"
-                :error-messages="v$.email.$errors.map(e => e.$message)"
-                label="Email"
-                prepend-icon="mdi-email"
-                type="email"
-                @input="v$.email.$touch"
-              />
-
-              <v-text-field
                 v-model="formData.password"
                 :error-messages="v$.password.$errors.map(e => e.$message)"
-                label="Contraseña"
+                label="Nueva contraseña"
                 prepend-icon="mdi-lock"
                 :type="showPassword ? 'text' : 'password'"
                 :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                 @click:append="showPassword = !showPassword"
-                @input="v$.password.$touch"
-                @keyup.enter="handleSubmit"
+                @input="handlePasswordChange"
+              />
+
+              <v-text-field
+                v-model="formData.passwordConfirm"
+                :error-messages="v$.passwordConfirm.$errors.map(e => e.$message)"
+                label="Confirmar nueva contraseña"
+                prepend-icon="mdi-lock-check"
+                :type="showPassword ? 'text' : 'password'"
+                @input="handleConfirmPasswordChange"
               />
             </v-form>
           </v-card-text>
@@ -48,18 +39,9 @@
               :disabled="authStore.loading || !isFormValid"
               @click="handleSubmit"
             >
-              Iniciar Sesión
+              Cambiar contraseña
             </v-btn>
           </v-card-actions>
-
-          <v-card-text class="text-center pt-0">
-            <v-btn variant="text" to="/auth/register" class="mb-2 d-block">
-              ¿No tienes cuenta? Regístrate
-            </v-btn>
-            <v-btn variant="text" to="/auth/forgot-password" class="d-block">
-              ¿Olvidaste tu contraseña?
-            </v-btn>
-          </v-card-text>
         </v-card>
 
         <v-alert
@@ -75,50 +57,81 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useVuelidate } from '@vuelidate/core'
-import { required, email, minLength, helpers } from '@vuelidate/validators'
+import { required, minLength, helpers } from '@vuelidate/validators'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const showPassword = ref(false)
+const token = ref('')
 
 const formData = reactive({
-  email: '',
-  password: ''
+  password: '',
+  passwordConfirm: ''
 })
 
+// Validador personalizado para confirmar contraseña
+const sameAsPassword = helpers.withMessage(
+  'Las contraseñas no coinciden',
+  (value) => value === formData.password
+)
+
 const rules = {
-  email: { 
-    required: helpers.withMessage('El email es requerido', required),
-    email: helpers.withMessage('Email inválido', email)
-  },
   password: { 
     required: helpers.withMessage('La contraseña es requerida', required),
     minLength: helpers.withMessage(
       'La contraseña debe tener al menos 6 caracteres',
       minLength(6)
     )
+  },
+  passwordConfirm: { 
+    required: helpers.withMessage('Debe confirmar la contraseña', required),
+    sameAsPassword
   }
 }
 
 const v$ = useVuelidate(rules, formData)
 
 const isFormValid = computed(() => {
-  return !v$.value.$invalid
+  return !v$.value.$invalid && formData.password === formData.passwordConfirm
 })
+
+function handlePasswordChange() {
+  v$.value.password.$touch()
+  if (formData.passwordConfirm) {
+    v$.value.passwordConfirm.$touch()
+  }
+}
+
+function handleConfirmPasswordChange() {
+  v$.value.passwordConfirm.$touch()
+}
 
 async function handleSubmit() {
   const formIsValid = await v$.value.$validate()
   if (!formIsValid) return
 
-  const success = await authStore.login(formData)
-  if (success) {
-    router.push('/dashboard')
+  try {
+    await authStore.resetPassword({
+      token: token.value,
+      password: formData.password
+    })
+    router.push('/auth/login')
+  } catch (error) {
+    // El error ya estará manejado en el store
   }
 }
+
+onMounted(() => {
+  // Obtener el token de la URL
+  token.value = route.params.token
+  if (!token.value) {
+    router.push('/auth/forgot-password')
+  }
+})
 </script>
 

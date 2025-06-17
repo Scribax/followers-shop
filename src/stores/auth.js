@@ -33,7 +33,6 @@ export const useAuthStore = defineStore('auth', {
         this.token = mockResponse.token
         this.isAuthenticated = true
         
-        // Store token in localStorage
         localStorage.setItem('token', mockResponse.token)
         return true
       } catch (error) {
@@ -62,11 +61,46 @@ export const useAuthStore = defineStore('auth', {
         this.token = mockResponse.token
         this.isAuthenticated = true
         
-        // Store token in localStorage
         localStorage.setItem('token', mockResponse.token)
         return true
       } catch (error) {
         this.error = error.message
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async requestPasswordReset(email) {
+      this.loading = true
+      this.error = null
+      try {
+        // TODO: Implement actual API call
+        // Simulamos un delay para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // En una implementación real, aquí se enviaría el email
+        return true
+      } catch (error) {
+        this.error = 'No se pudo enviar el email de recuperación. Por favor, intenta nuevamente.'
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async resetPassword({ token, password }) {
+      this.loading = true
+      this.error = null
+      try {
+        // TODO: Implement actual API call
+        // Simulamos un delay para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // En una implementación real, aquí se cambiaría la contraseña
+        return true
+      } catch (error) {
+        this.error = 'No se pudo restablecer la contraseña. El enlace podría haber expirado.'
         return false
       } finally {
         this.loading = false
